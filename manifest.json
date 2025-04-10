@@ -1,0 +1,14 @@
+{
+  "name": "Great System UMC",
+  "short_name": "Great System UMC",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#fff",
+  "description": "Great System UMC",
+  "icons": [
+  {
+    "src": "assets/img/umc.png",
+    "sizes": "144x144",
+    "type": "image/png"
+  }]
+}

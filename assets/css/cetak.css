@@ -1,0 +1,32 @@
+@page {
+	margin-top: 12.5mm;
+	margin-header: 0;
+}
+
+body {
+	font-family: calibri;
+	font-size: 11pt;
+	color: black;
+}
+
+.alamat-kop { 
+	font-size: 9pt;
+	white-space: nowrap; 
+}
+
+.p-0 { padding: 0; }
+.m-0 { margin: 0; }
+
+.nama-pt {
+	color: #A8281E;
+}
+
+.nama-fakultas {
+	color: #2C9764;
+	/*font-size: 20pt;*/
+	font-weight: normal;
+}
+
+table.valign-top tr td {
+	vertical-align: top;
+}
