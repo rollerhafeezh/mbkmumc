@@ -120,23 +120,6 @@ class Mbkm extends CI_Controller {
         unset($data['nim']);
         unset($data['id_sp']);
         unset($data['nama_prodi']);
-
-        # data mahasiswa
-        $mhs = $data;
-        if ($_FILES) {
-            $path = 'dokumen/foto';
-            $config['upload_path']          = './'.$path;
-            $config['allowed_types']        = 'jpg|png|gif|jpeg';
-            $config['overwrite']            = false;
-            $config['max_size']             = 5000;
-
-            $this->load->library('upload', $config);
-            if ($this->upload->do_upload('foto')) {
-                $mhs['foto'] = base_url($path.$this->upload->data('file_name'));
-            } else {
-                echo strip_tags($this->upload->display_errors()).' (max. uploaded size: 2 MB, allowed filetypes: .jpeg, .jpg, .png, .gif)';
-            }
-        }
         
         # mahasiswa insert
         // $mhs_insert = $this->Mbkm_model->updateOrInsert($_ENV['DB_MBKM'].'mahasiswa', $mhs, [ 'nik' => $mhs['nik'] ]);
@@ -145,12 +128,36 @@ class Mbkm extends CI_Controller {
         //     $mhs_pt_insert = $this->Mbkm_model->updateOrInsert($_ENV['DB_MBKM'].'mahasiswa_pt', $mhs_pt, [ 'id_mhs' => $mhs_pt['id_mhs'] ]);
         // }
 
+        # data mahasiswa
+        $mhs = $data;
         $mhs_insert = $this->Mbkm_model->insert_ignore_v2($_ENV['DB_MBKM'].'mahasiswa', $mhs, true);
 
         if ($mhs_insert) {
-            $mhs_pt['id_mhs'] = $mhs_insert;
-            $mhs_pt_insert = $this->Mbkm_model->insert_ignore_v2($_ENV['DB_MBKM'].'mahasiswa_pt', $mhs_pt, true);
 
+            if ($_FILES) {
+                $path = 'dokumen/foto/';
+                $config['upload_path']          = './'.$path;
+                $config['allowed_types']        = 'jpg|png|gif|jpeg';
+                $config['overwrite']            = false;
+                $config['max_size']             = 5000;
+
+                $this->load->library('upload', $config);
+                if ($this->upload->do_upload('foto')) {
+                    # update foto
+                    $foto = [
+                        'foto' => base_url($path.$this->upload->data('file_name'))
+                    ];
+
+                    $update_foto = $this->Mbkm_model->updateOrInsert($_ENV['DB_MBKM'].'mahasiswa', $foto, [ 'id_mhs' => $mhs_insert ]);
+                } else {
+                    echo strip_tags($this->upload->display_errors()).' (max. uploaded size: 2 MB, allowed filetypes: .jpeg, .jpg, .png, .gif)';
+                }
+            }
+
+            $mhs_pt['id_mhs'] = $mhs_insert;
+            $mhs_pt_insert = $this->Mbkm_model->insert_ignore_v2($_ENV['DB_MBKM'].'mahasiswa_pt', $mhs_pt);
+
+            # kirim email verifikasi
             $data_email = [
                 'nipd' => trim($mhs_pt['nipd']),
                 'id_mahasiswa_pt' => trim($mhs_pt['id_mahasiswa_pt']),
@@ -158,11 +165,7 @@ class Mbkm extends CI_Controller {
                 'email' => $mhs['email'],
             ]; $this->kirim_email($mhs['email'], "Verifikasi Akun Kampus Merdeka", $data_email);
 
-            exit;
-
             if ($mhs_pt_insert) {
-
-
                 $this->session->set_flashdata('msg', ['success', '<i class="pli-yes me-1"></i> Registrasi berhasil, silahkan periksa email untuk verifikasi akun.']);
                 redirect('registrasi');
 
@@ -176,29 +179,7 @@ class Mbkm extends CI_Controller {
             redirect('registrasi');
         }
 
-        print_r($mhs_insert); exit;
-        
-        $data['id_user'] = $_SESSION['id_user'];
-        $data['nama_user'] = ucwords(strtolower($_SESSION['nama_pengguna']));
-        $data['level_name'] = ucwords(strtolower($_SESSION['level_name']));
-
-        if($_FILES)  {
-            $config['upload_path']          = './dokumen/bimbingan/';
-            $config['allowed_types']        = 'pdf|doc|docx|ppt|pptx|jpg|png|gif';
-            $config['overwrite']            = true;
-            $config['max_size']             = 5000; // 1MB
-
-            $this->load->library('upload', $config);
-            if ($this->upload->do_upload('file')) {
-                $data['file'] = base_url('dokumen/bimbingan/'.$this->upload->data('file_name'));
-            } else {
-                echo strip_tags($this->upload->display_errors()).' (max. uploaded size: 5 MB, allowed filetypes: .pdf, .doc, .docx, .ppt, .pptx, .jpg, .png, .gif)';
-                exit;
-            }
-        }
-
-        $bimbingan = $this->Aktivitas_model->simpan_bimbingan($data);
-        // print_r($data);
+        // print_r($mhs_insert); exit;
     }
 
     function daftar()

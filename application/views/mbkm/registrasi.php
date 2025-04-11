@@ -1,6 +1,8 @@
 <!--Select2 [ OPTIONAL ]-->
 <link href="<?= base_url() ?>assets/select2.min.css" rel="stylesheet">
-
+<style type="text/css">
+    .me-1 { margin-top: -3px; }
+</style>
 <div class="content__header content__boxed overlapping">
     <div class="content__wrap">
         
@@ -86,10 +88,11 @@
                                         <li>Ukuran maksimal 2 MB;</li>
                                         <li>Tampilan foto harus potrait;</li>
                                         <li>Gunakan jas almamater kampus asal;</li>
+                                        <li>Gunakan latar belakang merah.</li>
                                     </ul>
                                 </label>
                                 <div class="col-md-6 text-center">
-                                    <img src="<?= base_url('assets/img/no foto 2.jpg') ?>" class="mb-2 rounded" id="foto_preview" height="168px" alt="">
+                                    <img src="<?= base_url('assets/img/no foto 2.jpg') ?>" class="mb-2 rounded" id="foto_preview" height="120px" alt="">
                                     <input class="form-control w-75 mx-auto" type="file" accept=".jpg,.jpeg,.png" id="foto" name="foto" onchange="unggah_dokumen('foto')" required="">
                                 </div>
                             </div>
