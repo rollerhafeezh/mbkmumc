@@ -350,7 +350,7 @@
                       <td>
                         <p>Hai, <?= ucwords(strtolower($nama_mahasiswa)) ?>.</p>
                         <p>Terima kasih telah melakukan registrasi akun Merdeka Belajar Kampus Merdeka (MBKM) Universitas Muhammdiyah Cirebon, silahkan verifikasi akun dengan klik tombol "VERIFIKASI AKUN" di bawah ini :</p>
-                        <a href="<?= base_url('mbkm/verifikasi/'.substr_replace(sha1($nim), 'x', 5, 0)) ?>" target="_blank">VERIFIKASI AKUN</a>
+                        <a href="<?= base_url('mbkm/verifikasi/'.substr_replace(sha1($id_mahasiswa_pt), 'x', 5, 0)) ?>" target="_blank">VERIFIKASI AKUN</a>
                         <br>
                         <br>
                         <table role="presentation" border="0" cellpadding="0" cellspacing="0" class="btn btn-primary">

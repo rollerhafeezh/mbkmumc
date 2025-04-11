@@ -19,29 +19,39 @@ class Mbkm extends CI_Controller {
 
     function kirim_email($email, $subject, $data = [])
     {
+        $mail_server    = $this->Mbkm_model->get($_ENV['DB_PMB'].'mail_server', array('is_active' => 'Y'))->row();
+
         $config = Array(
-            'protocol' => 'smtp',
-            'smtp_host' => 'smtp.gmail.com',
-            'smtp_port' => 465,
-            'smtp_user' => 'dev@unma.ac.id',
-            'smtp_pass' => 'ardimardiana182',
-            'mailtype'  => 'html', 
-            'charset'   => 'utf-8',
-            'smtp_crypto'   => 'ssl'
+        'protocol' => $mail_server->driver,
+        'smtp_host' => $mail_server->host,
+        'smtp_port' => $mail_server->port,
+        'smtp_user' => $mail_server->username,
+        'smtp_pass' => $mail_server->password,
+        'mailtype'  => $mail_server->mailtype, 
+        'charset'   => $mail_server->charset,
+        'smtp_crypto'   => $mail_server->encryption
         );
 
         $this->load->library('email', $config);
         $this->email->set_newline("\r\n");
-        
 
-        $this->email->from('dev@unma.ac.id', "Kampus Merdeka Universitas Muhammdiyah Cirebon");
+        $this->email->from($mail_server->username, "Universitas Muhammdiyah Cirebon");
         $this->email->to($email);
         $this->email->subject($subject);
         
         $mesg       = $this->load->view('mbkm/email', $data, true);
         $this->email->message($mesg);
 
-        $mail = $this->email->send();
+        // $mail = $this->email->send();
+        if (!$this->email->send()) {
+            // Menampilkan error jika pengiriman email gagal
+            echo "Error saat mengirim email: ";
+            echo $this->email->print_debugger();
+            return false;
+        } else {
+            return true;
+        }
+
     }
 
     function registrasi()
@@ -51,6 +61,27 @@ class Mbkm extends CI_Controller {
 
         $this->load->view('template', $data);
     }
+
+    function satuan_pendidikan() {
+        // Mendapatkan parameter pencarian dari request
+        $searchTerm = $this->input->get('q');
+
+        // Ambil data berdasarkan pencarian dari model
+        $data = $this->Mbkm_model->satuan_pendidikan($searchTerm);
+
+        // Format data untuk Select2
+        $result = array();
+        foreach ($data as $item) {
+            $result[] = array(
+                'id' => $item->id_sp,
+                'text' => $item->nm_lemb
+            );
+        }
+
+        // Kembalikan data dalam format JSON
+        echo json_encode(array('data' => $result));
+    }
+
 
     function verifikasi($nim)
     {
@@ -70,6 +101,104 @@ class Mbkm extends CI_Controller {
                 redirect('registrasi');
             }
         }
+    }
+
+    public function daftar_v2()
+    {
+        $active_smt = json_decode($this->curl->simple_get($_ENV['API_LINK'].'ref/smt?id_smt=aktif'))[0];
+
+        $data = $this->input->post(null, true);
+
+        # data mahasiswa_pt
+        $mhs_pt['id_mahasiswa_pt'] = rand(10, 99).'.'.$data['nim'];
+        $mhs_pt['nipd'] = $data['nim'];
+        $mhs_pt['id_sp'] = $data['id_sp'];
+        $mhs_pt['nama_prodi'] = $data['nama_prodi'];
+        $mhs_pt['mulai_smt'] = $active_smt->id_semester;
+        $mhs_pt['id_mhs'] = '';
+
+        unset($data['nim']);
+        unset($data['id_sp']);
+        unset($data['nama_prodi']);
+
+        # data mahasiswa
+        $mhs = $data;
+        if ($_FILES) {
+            $path = 'dokumen/foto';
+            $config['upload_path']          = './'.$path;
+            $config['allowed_types']        = 'jpg|png|gif|jpeg';
+            $config['overwrite']            = false;
+            $config['max_size']             = 5000;
+
+            $this->load->library('upload', $config);
+            if ($this->upload->do_upload('foto')) {
+                $mhs['foto'] = base_url($path.$this->upload->data('file_name'));
+            } else {
+                echo strip_tags($this->upload->display_errors()).' (max. uploaded size: 2 MB, allowed filetypes: .jpeg, .jpg, .png, .gif)';
+            }
+        }
+        
+        # mahasiswa insert
+        // $mhs_insert = $this->Mbkm_model->updateOrInsert($_ENV['DB_MBKM'].'mahasiswa', $mhs, [ 'nik' => $mhs['nik'] ]);
+        // if ($mhs_insert != 'update') {
+        //     $mhs_pt['id_mhs'] = $mhs_insert;
+        //     $mhs_pt_insert = $this->Mbkm_model->updateOrInsert($_ENV['DB_MBKM'].'mahasiswa_pt', $mhs_pt, [ 'id_mhs' => $mhs_pt['id_mhs'] ]);
+        // }
+
+        $mhs_insert = $this->Mbkm_model->insert_ignore_v2($_ENV['DB_MBKM'].'mahasiswa', $mhs, true);
+
+        if ($mhs_insert) {
+            $mhs_pt['id_mhs'] = $mhs_insert;
+            $mhs_pt_insert = $this->Mbkm_model->insert_ignore_v2($_ENV['DB_MBKM'].'mahasiswa_pt', $mhs_pt, true);
+
+            $data_email = [
+                'nipd' => trim($mhs_pt['nipd']),
+                'id_mahasiswa_pt' => trim($mhs_pt['id_mahasiswa_pt']),
+                'nama_mahasiswa' => $mhs['nm_pd'],
+                'email' => $mhs['email'],
+            ]; $this->kirim_email($mhs['email'], "Verifikasi Akun Kampus Merdeka", $data_email);
+
+            exit;
+
+            if ($mhs_pt_insert) {
+
+
+                $this->session->set_flashdata('msg', ['success', '<i class="pli-yes me-1"></i> Registrasi berhasil, silahkan periksa email untuk verifikasi akun.']);
+                redirect('registrasi');
+
+            } else {
+                $this->session->set_flashdata('msg', ['danger', '<i class="pli-exclamation me-1"></i> Registrasi gagal, mahasiswa pt tidak tersimpan!']);
+                redirect('registrasi');
+            }
+
+        } else {
+            $this->session->set_flashdata('msg', ['danger', '<i class="pli-exclamation me-1"></i> Registrasi gagal, mahasiswa sudah terdaftar!']);
+            redirect('registrasi');
+        }
+
+        print_r($mhs_insert); exit;
+        
+        $data['id_user'] = $_SESSION['id_user'];
+        $data['nama_user'] = ucwords(strtolower($_SESSION['nama_pengguna']));
+        $data['level_name'] = ucwords(strtolower($_SESSION['level_name']));
+
+        if($_FILES)  {
+            $config['upload_path']          = './dokumen/bimbingan/';
+            $config['allowed_types']        = 'pdf|doc|docx|ppt|pptx|jpg|png|gif';
+            $config['overwrite']            = true;
+            $config['max_size']             = 5000; // 1MB
+
+            $this->load->library('upload', $config);
+            if ($this->upload->do_upload('file')) {
+                $data['file'] = base_url('dokumen/bimbingan/'.$this->upload->data('file_name'));
+            } else {
+                echo strip_tags($this->upload->display_errors()).' (max. uploaded size: 5 MB, allowed filetypes: .pdf, .doc, .docx, .ppt, .pptx, .jpg, .png, .gif)';
+                exit;
+            }
+        }
+
+        $bimbingan = $this->Aktivitas_model->simpan_bimbingan($data);
+        // print_r($data);
     }
 
     function daftar()

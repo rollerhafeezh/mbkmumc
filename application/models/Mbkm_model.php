@@ -9,6 +9,33 @@ class Mbkm_model extends CI_Model {
 		$this->load->database();
 	}
 
+	public function updateOrInsert($table, $data, $where)
+    {
+        // Cek apakah data sudah ada berdasarkan kondisi $where
+        $query = $this->db->get_where($table, $where);
+        
+        if ($query->num_rows() > 0) {
+            // Jika data ada, lakukan update
+            $this->db->where($where);
+            $update = $this->db->update($table, $data);
+            return 'update';
+        } else {
+            // Jika data tidak ada, lakukan insert
+            $this->db->insert($table, $data);
+            return $this->db->insert_id();
+        }
+    }
+
+
+	public function satuan_pendidikan($searchTerm) {
+        $this->db->select('*');
+        $this->db->like('nm_lemb', $searchTerm);
+        $this->db->limit(5);
+        $query = $this->db->get($_ENV['DB_REF'].'satuan_pendidikan'); // Ganti dengan nama tabel sesuai database
+        
+        return $query->result();
+    }
+
 	function delete($table, $where)
 	{
 		$this->db->where($where);
@@ -20,6 +47,22 @@ class Mbkm_model extends CI_Model {
 		$insert_query = $this->db->insert_string($table, $data);
 		$insert_query = str_replace('INSERT INTO','INSERT IGNORE INTO', $insert_query);
 		return $this->db->query($insert_query);
+	}
+
+	function insert_ignore_v2($table, $data, $insert_id = false)
+	{
+	    $insert_query = $this->db->insert_string($table, $data);
+	    $insert_query = str_replace('INSERT INTO', 'INSERT IGNORE INTO', $insert_query);
+
+	    if ($this->db->query($insert_query)) {
+	        if ($insert_id) {
+	            return $this->db->insert_id(); // Mengembalikan ID dari data yang baru di-insert
+	        } else {
+	            return true; // Mengembalikan true jika query berhasil
+	        }
+	    } else {
+	        return false; // Mengembalikan false jika query gagal
+	    }
 	}
 
 	function insert($table, $data, $insert_id = false)
