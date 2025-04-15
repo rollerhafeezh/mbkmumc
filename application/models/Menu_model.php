@@ -46,7 +46,7 @@ class Menu_model extends CI_Model {
                     'menu_color'=> '',
                     'menu_text' => 'Login',
                     'menu_icon' => '',
-                    'menu_link' => 'dasbor?redirect=https://sso.ensitec.net',
+                    'menu_link' => 'dasbor?redirect=https://sso.umc.ac.id',
                 ],
             ];
         return $data;

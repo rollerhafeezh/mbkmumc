@@ -86,18 +86,28 @@ class Mbkm extends CI_Controller {
     function verifikasi($nim)
     {
         $nim = substr_replace($nim, '', 5, 1);
+
         $user_main = $this->Mbkm_model->get($_ENV['DB_SSO'].'user_main', [ 'sha1(username)' => $nim ]);
         $mahasiswa_pt = $this->Mbkm_model->get($_ENV['DB_MBKM'].'mahasiswa_pt', [ 'sha1(id_mahasiswa_pt)' => $nim ]);
 
+        // print_r($user_main->row()); exit;
+
+        # jika belum ada user dan mahasiswa pt ada
         if($user_main->num_rows() > 0 AND $mahasiswa_pt->num_rows() > 0) {
             $data_user_level = [
-                'id_level' => '6',
+                'id_level' => '96',
                 'username' => $user_main->row()->username,
                 'status_user_level' => '1',
             ]; $user_level = $this->Mbkm_model->insert_ignore($_ENV['DB_SSO'].'user_level', $data_user_level);
 
             if ($user_level) {
+                $verify = $this->Mbkm_model->update($_ENV['DB_SSO'].'user_main', [ 'username' => $user_main->row()->username ], ['verify' => '1']);
+
                 $this->session->set_flashdata('msg', ['success', '<i class="pli-yes me-1"></i> Verifikasi akun kampus merdeka berhasil, silahkan login.']);
+                redirect('registrasi');
+
+            } else {
+                $this->session->set_flashdata('msg', ['danger', '<i class="pli-exclamation me-1"></i> Verifikasi akun gagal, silahkan hubungi kampus!']);
                 redirect('registrasi');
             }
         }
@@ -106,7 +116,6 @@ class Mbkm extends CI_Controller {
     public function daftar_v2()
     {
         $active_smt = json_decode($this->curl->simple_get($_ENV['API_LINK'].'ref/smt?id_smt=aktif'))[0];
-
         $data = $this->input->post(null, true);
 
         # data mahasiswa_pt
@@ -121,19 +130,13 @@ class Mbkm extends CI_Controller {
         unset($data['id_sp']);
         unset($data['nama_prodi']);
         
-        # mahasiswa insert
-        // $mhs_insert = $this->Mbkm_model->updateOrInsert($_ENV['DB_MBKM'].'mahasiswa', $mhs, [ 'nik' => $mhs['nik'] ]);
-        // if ($mhs_insert != 'update') {
-        //     $mhs_pt['id_mhs'] = $mhs_insert;
-        //     $mhs_pt_insert = $this->Mbkm_model->updateOrInsert($_ENV['DB_MBKM'].'mahasiswa_pt', $mhs_pt, [ 'id_mhs' => $mhs_pt['id_mhs'] ]);
-        // }
-
         # data mahasiswa
         $mhs = $data;
+        # input mahasiswa
         $mhs_insert = $this->Mbkm_model->insert_ignore_v2($_ENV['DB_MBKM'].'mahasiswa', $mhs, true);
 
         if ($mhs_insert) {
-
+            # upload foto
             if ($_FILES) {
                 $path = 'dokumen/foto/';
                 $config['upload_path']          = './'.$path;
@@ -154,20 +157,34 @@ class Mbkm extends CI_Controller {
                 }
             }
 
+            # input mahasiswa pt
             $mhs_pt['id_mhs'] = $mhs_insert;
             $mhs_pt_insert = $this->Mbkm_model->insert_ignore_v2($_ENV['DB_MBKM'].'mahasiswa_pt', $mhs_pt);
 
-            # kirim email verifikasi
-            $data_email = [
-                'nipd' => trim($mhs_pt['nipd']),
-                'id_mahasiswa_pt' => trim($mhs_pt['id_mahasiswa_pt']),
-                'nama_mahasiswa' => $mhs['nm_pd'],
-                'email' => $mhs['email'],
-            ]; $this->kirim_email($mhs['email'], "Verifikasi Akun Kampus Merdeka", $data_email);
-
             if ($mhs_pt_insert) {
-                $this->session->set_flashdata('msg', ['success', '<i class="pli-yes me-1"></i> Registrasi berhasil, silahkan periksa email untuk verifikasi akun.']);
-                redirect('registrasi');
+                # kirim email verifikasi
+                $data_email = [
+                    'nipd' => trim($mhs_pt['nipd']),
+                    'id_mahasiswa_pt' => trim($mhs_pt['id_mahasiswa_pt']),
+                    'nama_mahasiswa' => $mhs['nm_pd'],
+                    'email' => $mhs['email'],
+                ]; $this->kirim_email($mhs['email'], "Verifikasi Akun Kampus Merdeka", $data_email);
+
+                $data_user_main = [
+                    'username' => trim($mhs_pt['id_mahasiswa_pt']),
+                    'email' => $mhs['email'],
+                    'nama_pengguna' => strtoupper($mhs['nm_pd']),
+                    'verify' => '0',
+                ]; $user_main_insert = $this->Mbkm_model->insert_ignore_v2($_ENV['DB_SSO'].'user_main', $data_user_main);
+
+                if ($user_main_insert) {
+                    $this->session->set_flashdata('msg', ['success', '<i class="pli-yes me-1"></i> Registrasi berhasil, silahkan periksa email untuk verifikasi akun.']);
+                    redirect('registrasi');
+
+                } else {
+                    $this->session->set_flashdata('msg', ['danger', '<i class="pli-exclamation me-1"></i> Registrasi gagal, akun mahasiswa tidak tersimpan!']);
+                    redirect('registrasi');
+                }
 
             } else {
                 $this->session->set_flashdata('msg', ['danger', '<i class="pli-exclamation me-1"></i> Registrasi gagal, mahasiswa pt tidak tersimpan!']);

@@ -88,7 +88,7 @@
                 Daftar
             </a>
 
-            <a href="<?= base_url('dasbor?redirect=https://sso.ensitec.net') ?>" class="d-block d-lg-none me-4 text-white">
+            <a href="<?= base_url('dasbor?redirect=https://sso.umc.ac.id') ?>" class="d-block d-lg-none me-4 text-white">
                 Login
             </a>
 

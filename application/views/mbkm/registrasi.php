@@ -85,6 +85,7 @@
                                     Keterangan :
                                     <ul>
                                         <li>Tipe file ber-ekstensi .jpg, .jpeg atau .png;</li>
+                                        <li>Ukuran foto 3x4;</li>
                                         <li>Ukuran maksimal 2 MB;</li>
                                         <li>Tampilan foto harus potrait;</li>
                                         <li>Gunakan jas almamater kampus asal;</li>
