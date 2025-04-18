@@ -40,7 +40,7 @@
 
                                 <div class="col-md-4">
                                     <label class="form-label text-dark fw-bold" for="jk">Jenis Kelamin <span class="text-danger">*</span></label>
-                                    <select class="form-control" required="" name="jk" id="jk">
+                                    <select class="form-select" required="" name="jk" id="jk">
                                         <option value="">Jenis Kelamin</option>
                                         <option value="L">Laki-laki</option>
                                         <option value="P">Perempuan</option>
